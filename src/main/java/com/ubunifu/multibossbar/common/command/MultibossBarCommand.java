@@ -36,8 +36,6 @@ public final class MultibossBarCommand {
 		CommandDispatcher<ServerCommandSource> dispatcher,
 		HolderLookup.Provider registries
 	) {
-		if (!QuiltLoader.isDevelopmentEnvironment()) return;
-
 		LiteralArgumentBuilder<ServerCommandSource> root =
 			CommandManager.literal("multibossbar")
 				.requires(source -> source.hasPermission(2));
