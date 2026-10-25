@@ -8,7 +8,7 @@ import net.minecraft.text.Text;
 import java.util.UUID;
 
 public class ServerBarSection extends BarSection {
-	protected ServerBarSection(MultibarContainer container, UUID uuid, Text name, double percentage, BossBar.Color color, BossBar.Style style, RowType rowType, float verticalScale) {
+	public ServerBarSection(MultibarContainer container, UUID uuid, Text name, double percentage, BossBar.Color color, BossBar.Style style, RowType rowType, float verticalScale) {
 		super(container, uuid, name, percentage, color, style, rowType, verticalScale);
 	}
 

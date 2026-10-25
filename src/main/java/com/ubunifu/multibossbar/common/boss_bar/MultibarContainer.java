@@ -1,5 +1,6 @@
 package com.ubunifu.multibossbar.common.boss_bar;
 
+import com.ubunifu.multibossbar.server.bossbar.ServerBarSection;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.*;
@@ -34,8 +35,8 @@ public class MultibarContainer {
 	 * @param style The style of the bar.
 	 * @return A reference to the stored value, this means changing values in the returned object will reflect in the container.
 	 */
-	public static BarSection createSection(@NotNull MultibarContainer container, @Nullable Text name, double percentage, BossBar.Color color, BossBar.Style style, RowType rowType, float verticalScale) {
-		BarSection section = new BarSection(
+	public static ServerBarSection createSection(@NotNull MultibarContainer container, @Nullable Text name, double percentage, BossBar.Color color, BossBar.Style style, RowType rowType, float verticalScale) {
+		ServerBarSection section = new ServerBarSection(
 			container,
 			UUID.randomUUID(),
 			name == null ? Text.empty() : name,
@@ -48,16 +49,16 @@ public class MultibarContainer {
 		container.addSection( section );
 		return section;
 	}
-	public static BarSection createSection(@NotNull MultibarContainer container,
+	public static ServerBarSection createSection(@NotNull MultibarContainer container,
 	                                       UUID uuid,
 	                                       @Nullable Text name,
 	                                       double percentage,
 	                                       BossBar.Color color,
 	                                       BossBar.Style style,
-										   RowType rowType,
+	                                       RowType rowType,
 	                                       float verticalScale,
-										   boolean visible) {
-		BarSection section = new BarSection(
+	                                       boolean visible) {
+		ServerBarSection section = new ServerBarSection(
 			container,
 			uuid,
 			name == null ? Text.empty() : name,
