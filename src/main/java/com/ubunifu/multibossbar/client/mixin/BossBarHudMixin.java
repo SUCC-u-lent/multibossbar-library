@@ -78,8 +78,12 @@ public abstract class BossBarHudMixin {
 			int screenWidth = graphics.getScaledWindowWidth();
 			int barY = 12;
 
-			for (MultibarContainer container : containers) {
-				Pair<Float, Boolean> pair = renderContainer(graphics, container, barY, screenWidth);
+			for (int i = 0; i < containers.size(); i++) {
+				MultibarContainer container = containers.get(i);
+				if (!container.isVisible()) continue;
+				MultibarContainer nextContainer = null;
+				if (i + 1 < containers.size()) nextContainer = containers.get(i + 1);
+				Pair<Float, Boolean> pair = renderContainer(graphics, container, nextContainer, barY, screenWidth);
 				barY += Math.round(pair.getFirst());
 				if (pair.getSecond()) break;
 			}
@@ -90,21 +94,25 @@ public abstract class BossBarHudMixin {
 	}
 
 	@Unique
-	private Pair<Float,Boolean> renderContainer(GuiGraphics graphics, MultibarContainer container, float barY, int screenWidth) {
+	private Pair<Float,Boolean> renderContainer(GuiGraphics graphics, MultibarContainer container, MultibarContainer nextContainer, float barY, int screenWidth) {
 		float originalY = barY;
 
 		Text bossBarName = container.getDisplayName();
+
+		boolean isNameVisible = bossBarName != null && !bossBarName.getString().isBlank();
+		float headerTextMultiplier = isNameVisible ? 1 : 0;
 
 		int nameWidth = this.client.textRenderer.getWidth(bossBarName);
 
 		int barX = screenWidth / 2 - BAR_INSET;
 
 		int nameX = screenWidth / 2 - nameWidth / 2;
-		float nameY = barY - FONT_HEIGHT;
+		float nameY = barY - (FONT_HEIGHT * headerTextMultiplier);
 
 		List<BarSection> barSections = List.copyOf(container.getBars());
 		for (int i = 0; i < barSections.size(); i++) {
 			BarSection section = barSections.get(i);
+			if (!section.isVisible()) continue;
 			if (section.getType() == RowType.WIDE)
 				barY += mbbl$renderBar(graphics, section, barX, barY, BAR_WIDTH);
 			else {
@@ -112,7 +120,7 @@ public abstract class BossBarHudMixin {
 				boolean inBounds = isInBounds(barSections, nextIndex);
 				BarSection nextBarSection = null;
 				if (inBounds) nextBarSection = barSections.get(nextIndex);
-				if (!inBounds || nextBarSection == null)
+				if (!inBounds || nextBarSection == null || !nextBarSection.isVisible())
 					barY += mbbl$renderBar(graphics, section, barX, barY, BAR_WIDTH);
 				else {
 					int barWidth = Math.round(BAR_WIDTH / 2f);
@@ -123,10 +131,15 @@ public abstract class BossBarHudMixin {
 			}
 		}
 
-		Objects.requireNonNull(this.client.textRenderer);
-		graphics.drawShadowedText(this.client.textRenderer, bossBarName, nameX, (int)nameY, 16777215);
+		if (isNameVisible) {
+			Objects.requireNonNull(this.client.textRenderer);
+			graphics.drawShadowedText(this.client.textRenderer, bossBarName, nameX, (int)nameY, 16777215);
+		}
 
-		barY += (FONT_HEIGHT + PADDING) + FONT_HEIGHT;
+		int nextFontHeight = 0;
+		if (nextContainer != null) nextFontHeight = isNameVisible ? 9 : 0;
+
+		barY += (nextFontHeight + PADDING) + nextFontHeight;
 
 		// End.
 		if (barY >= graphics.getScaledWindowHeight() / 3f) {
