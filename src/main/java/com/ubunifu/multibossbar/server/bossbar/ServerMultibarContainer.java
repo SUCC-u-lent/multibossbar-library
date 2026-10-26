@@ -23,7 +23,13 @@ public class ServerMultibarContainer extends MultibarContainer {
 	}
 
 	public boolean addPlayer(ServerPlayerEntity player) {
+		if (PLAYERS.stream().anyMatch(p -> p.getUuid().equals(player.getUuid()))) return false;
 		BossBarContainerS2CPacket.sendPacket(ServerBarPacketType.CREATE, this, List.of(player));
+		for (BarSection section : getBars()) {
+			BossBarS2CPacket.sendPacket(
+				BarPacketType.CREATE, this, section, List.of(player)
+			);
+		}
 		return this.PLAYERS.add(player);
 	}
 
