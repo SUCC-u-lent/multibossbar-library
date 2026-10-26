@@ -51,6 +51,9 @@ public record BossBarContainerS2CPacket(@NotNull PacketByteBuf data) implements 
 			case UPDATE_DARK_SKY -> buf.writeBoolean(container.isDarkenSky());
 			default -> throw new UnsupportedOperationException("A case for "+packetType.name()+ " has not been implemented yet.");
 		}
+
+		BossBarContainerS2CPacket packet = new BossBarContainerS2CPacket(buf);
+		players.forEach(packet::send);
 	}
 
 	public void receive(ClientPlayNetworking.Context context) {
