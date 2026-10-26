@@ -23,7 +23,7 @@ public class MultibarContainer {
 	protected boolean darkenSky;
 	protected boolean dragonMusic;
 	protected boolean thickenFog;
-	protected boolean visible;
+	protected boolean visible = true;
 	protected final List<BarSection> barSectionList = new ArrayList<>();
 
 	/**

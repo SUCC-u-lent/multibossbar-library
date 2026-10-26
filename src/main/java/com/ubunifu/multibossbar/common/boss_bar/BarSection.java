@@ -14,7 +14,7 @@ public class BarSection {
 	protected BossBar.Style style;
 	protected RowType type;
 	protected float verticalScale;
-	protected boolean visible;
+	protected boolean visible = true;
 
 	protected BarSection(MultibarContainer container, UUID uuid) {
 		this.uuid = uuid;

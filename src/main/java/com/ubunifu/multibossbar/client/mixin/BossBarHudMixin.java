@@ -173,6 +173,13 @@ public abstract class BossBarHudMixin {
 	}
 
 	@Unique
+	private <T> T safeGet(T[] tbl, int index) {
+		if (tbl.length == 0) return null;
+		if (index < 0 || index > tbl.length - 1) return null;
+		return tbl[index];
+	}
+
+	@Unique
 	private int mbbl$renderSection(GuiGraphics graphics, int x, int y, int width, BarSection section) {
 		int imageHeight = mbbl$drawBarSection(graphics, x, y, section, width, BACKGROUND_TEXTURES, NOTCHED_BACKGROUND_TEXTURES);
 		int filledWidth = MathHelper.ceil(
@@ -193,8 +200,13 @@ public abstract class BossBarHudMixin {
 
 		Sprite sprite;
 
-		if (bar.getStyle() != BossBar.Style.PROGRESS) sprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(alternativeTextures[bar.getColor().ordinal()]);
-		else sprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(textures[bar.getColor().ordinal()]);
+		Identifier alterIdentifier = safeGet(alternativeTextures, bar.getStyle().ordinal() - 1);
+		Identifier plainIdentifier = safeGet(textures, bar.getColor().ordinal());
+		if (alterIdentifier == null) alterIdentifier = alternativeTextures[0];
+		if (plainIdentifier == null) plainIdentifier = textures[0];
+
+		if (bar.getStyle() != BossBar.Style.PROGRESS) sprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(alterIdentifier);
+		else sprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(plainIdentifier);
 
 		((GuiGraphicsAccessor)graphics).multibossbar$invokeDrawSprite(sprite,
 			x,
