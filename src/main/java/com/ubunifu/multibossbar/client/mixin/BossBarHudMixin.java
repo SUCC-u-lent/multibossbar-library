@@ -2,17 +2,16 @@ package com.ubunifu.multibossbar.client.mixin;
 
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.datafixers.util.Pair;
 import com.ubunifu.multibossbar.common.boss_bar.*;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.hud.boss_bar.*;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.boss.BossBar;
-import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -47,10 +46,17 @@ public abstract class BossBarHudMixin {
 	@Final
 	private static Identifier[] NOTCHED_PROGRESS_TEXTURES;
 
-	@Shadow
-	protected abstract void draw(GuiGraphics graphics, int x, int y, BossBar bar, int width, Identifier[] textures, Identifier[] alternativeTextures);
 	@Unique
 	private int totalUsedSize;
+
+	@Unique
+	private static final int BAR_INSET = 91;
+	@Unique
+	private static final int FONT_HEIGHT = 9;
+	@Unique
+	private static final int PADDING = 2;
+	@Unique
+	private static final int BAR_WIDTH = 182;
 
 	@ModifyVariable(
 		method = "render",
@@ -62,160 +68,120 @@ public abstract class BossBarHudMixin {
 		return j + totalUsedSize;
 	}
 
-	@Inject(method = "render",at=@At("HEAD"))
-	private void renderMixin(GuiGraphics graphics, CallbackInfo ci)
-	{
-		List<MultibarContainer> bossBars = List.copyOf(MultibarContainer.MULTIBAR_CONTAINERS.values());
+	@Inject(method = "render", at = @At("HEAD"))
+	private void render(GuiGraphics graphics, CallbackInfo ci) {
+		List<MultibarContainer> containers =
+			List.copyOf(MultibarContainer.MULTIBAR_CONTAINERS.values());
 
-		if (!bossBars.isEmpty()) {
-			this.client.getProfiler().push("bossHealth");
-			int i = graphics.getScaledWindowWidth();
-			int j = 12;
+		if (!containers.isEmpty()) {
+			this.client.getProfiler().push("multiBossHealth");
+			int screenWidth = graphics.getScaledWindowWidth();
+			int barY = 12;
 
-			int k = i / 2 - 91;
-			for(MultibarContainer clientBossBar : bossBars) {
-				if (!clientBossBar.isVisible()) continue;
-				if (clientBossBar.isEmpty()) continue;
-				int assetHeight = mbbl$renderBar(graphics, k, j, clientBossBar);
-				Text text = clientBossBar.getDisplayName();
-				if (text == null) continue;
-				int m = this.client.textRenderer.getWidth(text);
-				int n = i / 2 - m / 2;
-				int o = j - 9;
-				graphics.drawShadowedText(this.client.textRenderer, text, n, o, 16777215);
-				Objects.requireNonNull(this.client.textRenderer);
-				j += assetHeight + 1;
-				if (j >= graphics.getScaledWindowHeight() / 3) {
-					break;
-				}
+			for (MultibarContainer container : containers) {
+				Pair<Float, Boolean> pair = renderContainer(graphics, container, barY, screenWidth);
+				barY += Math.round(pair.getFirst());
+				if (pair.getSecond()) break;
 			}
-			totalUsedSize = j;
+			totalUsedSize = barY;
 
 			this.client.getProfiler().pop();
-		} else {
-			totalUsedSize = 0;
 		}
 	}
 
 	@Unique
-	private int mbbl$renderBar(GuiGraphics graphics, int x, int y, MultibarContainer bar)
-	{
-		int PADDING = 2;
-		int barWidth = 182;
-		int barY = y;
-		List<BarSection> sections = bar.getBars();
-		for (int i = 0; i < sections.size(); i++) {
-			BarSection section = sections.get( i );
-			if (section == null || !section.isVisible()) continue;
-			if (section.getType() == RowType.MULTI && i < sections.size() - 1) {
-				BarSection nextBar = sections.get( ++i );
-				if (nextBar != null && nextBar.isVisible()){
-					int section1Height = mbbl$renderSection(graphics,x,barY,barWidth/2,section);
-					int section2Height = mbbl$renderSection(graphics,x+(barWidth/2),barY,barWidth/2,nextBar);
-					int textX = x + PADDING; // Add 1 to get rid of border
-					int textY = barY + PADDING;
-					barY += Math.max(section1Height, section2Height);
-					Text text1 = section.getName();
-					Text text2 = nextBar.getName();
-					drawInBounds(graphics,this.client.textRenderer, text1, textX, textY, (barWidth / 2) - PADDING, section1Height - PADDING, 16777215, DisplayEntity.TextDisplayEntity.Alignment.CENTER, DisplayEntity.TextDisplayEntity.Alignment.CENTER);
-					drawInBounds(graphics,this.client.textRenderer, text2, textX+(barWidth/2), textY, (barWidth / 2) - PADDING, section2Height - PADDING, 16777215, DisplayEntity.TextDisplayEntity.Alignment.CENTER, DisplayEntity.TextDisplayEntity.Alignment.CENTER);
-					continue;
-				} else i--;
+	private Pair<Float,Boolean> renderContainer(GuiGraphics graphics, MultibarContainer container, float barY, int screenWidth) {
+		float originalY = barY;
+
+		Text bossBarName = container.getDisplayName();
+
+		int nameWidth = this.client.textRenderer.getWidth(bossBarName);
+
+		int barX = screenWidth / 2 - BAR_INSET;
+
+		int nameX = screenWidth / 2 - nameWidth / 2;
+		float nameY = barY - FONT_HEIGHT;
+
+		List<BarSection> barSections = List.copyOf(container.getBars());
+		for (int i = 0; i < barSections.size(); i++) {
+			BarSection section = barSections.get(i);
+			if (section.getType() == RowType.WIDE)
+				barY += mbbl$renderBar(graphics, section, barX, barY, BAR_WIDTH);
+			else {
+				int nextIndex = i + 1;
+				boolean inBounds = isInBounds(barSections, nextIndex);
+				BarSection nextBarSection = null;
+				if (inBounds) nextBarSection = barSections.get(nextIndex);
+				if (!inBounds || nextBarSection == null)
+					barY += mbbl$renderBar(graphics, section, barX, barY, BAR_WIDTH);
+				else {
+					int barWidth = Math.round(BAR_WIDTH / 2f);
+					float bar1Height = mbbl$renderBar(graphics, section, barX, barY, barWidth);
+					float bar2Height = mbbl$renderBar(graphics, section, barX + barWidth, barY, barWidth);
+					barY += Math.max(bar1Height, bar2Height);
+				}
 			}
-			int secHeight = mbbl$renderSection( graphics, x, barY, barWidth, section );
-			int textX = x + PADDING; // Add 1 to get rid of border
-			int textY = barY + PADDING;
-			barY += secHeight;
-			Text text1 = section.getName();
-			drawInBounds(graphics,this.client.textRenderer, text1, textX, textY, barWidth - PADDING, secHeight - PADDING, 16777215, DisplayEntity.TextDisplayEntity.Alignment.CENTER, DisplayEntity.TextDisplayEntity.Alignment.CENTER);
 		}
-		return barY - y; // Considering we add Y after rendering it the last section will add its height, but we remove Y to not account that.
-	}
 
-	@Unique
-	private void drawInBounds(GuiGraphics graphics, TextRenderer textRenderer, Text text, int x, int y, int width, int height, int color, DisplayEntity.TextDisplayEntity.Alignment verticalAlignment, DisplayEntity.TextDisplayEntity.Alignment horizontalAlignment) {
+		Objects.requireNonNull(this.client.textRenderer);
+		graphics.drawShadowedText(this.client.textRenderer, bossBarName, nameX, (int)nameY, 16777215);
 
-		// A font height of approximately 10 units is our reference size.
-		float scale = height / 10.0f;
+		barY += (FONT_HEIGHT + PADDING) + FONT_HEIGHT;
 
-		if (scale <= 0.0f) return;
-
-		int textWidth = textRenderer.getWidth(text);
-		int textHeight = textRenderer.fontHeight;
-
-		float scaledWidth = textWidth * scale;
-		float scaledHeight = textHeight * scale;
-
-		float drawX = switch (horizontalAlignment) {
-			case LEFT -> x;
-			case CENTER -> x + (width - scaledWidth) / 2.0f;
-			case RIGHT -> x + width - scaledWidth;
-		};
-
-		float drawY = switch (verticalAlignment) {
-			case LEFT -> y;
-			case CENTER -> y + (height - scaledHeight) / 2.0f;
-			case RIGHT -> y + height - scaledHeight;
-		};
-
-		graphics.enableScissor(x, y, x + width, y + height);
-		graphics.getMatrices().push();
-
-		try {
-			graphics.getMatrices().translate(drawX, drawY, 0);
-			graphics.getMatrices().scale(scale, scale, 1.0f);
-
-			graphics.drawShadowedText(textRenderer, text, 0, 0, color);
-		} finally {
-			graphics.getMatrices().pop();
-			graphics.disableScissor();
+		// End.
+		if (barY >= graphics.getScaledWindowHeight() / 3f) {
+			return Pair.of(barY - originalY, true);
 		}
+		return Pair.of(barY - originalY, false);
 	}
 
 	@Unique
-	private <T> T safeGet(T[] tbl, int index) {
-		if (tbl.length == 0) return null;
-		if (index < 0 || index > tbl.length - 1) return null;
-		return tbl[index];
+	boolean isInBounds(List<?> tbl, int index) {
+		if (tbl == null || tbl.isEmpty()) return false;
+		return index >= 0 && index < tbl.size();
 	}
 
 	@Unique
-	private int mbbl$renderSection(GuiGraphics graphics, int x, int y, int width, BarSection section) {
-		int imageHeight = mbbl$drawBarSection(graphics, x, y, section, width, BACKGROUND_TEXTURES, NOTCHED_BACKGROUND_TEXTURES);
-		int filledWidth = MathHelper.ceil(
-			MathHelper.clamp(section.getPercentage(), 0.0F, 1.0F) * width
+	private float mbbl$renderBar(GuiGraphics graphics, BarSection section, float x, float y, int width) {
+		float barHeight = MathHelper.clamp(
+			section.getVerticalScale(),
+			section.getName().getString().isBlank() ? 5f : 9f,
+			20f
 		);
-		if (filledWidth > 0)
-			mbbl$drawBarSection(graphics, x, y, section, filledWidth, PROGRESS_TEXTURES, NOTCHED_PROGRESS_TEXTURES);
-		return imageHeight;
+
+		mbbl$draw(graphics, Math.round(x), Math.round(y), width, Math.round(barHeight), section, BACKGROUND_TEXTURES, NOTCHED_BACKGROUND_TEXTURES);
+		int i = MathHelper.method_53063((float) section.getPercentage(), 0, width);
+		if (i > 0) {
+			mbbl$draw(graphics, Math.round(x), Math.round(y), i, Math.round(barHeight), section, PROGRESS_TEXTURES, NOTCHED_PROGRESS_TEXTURES);
+		}
+
+		return barHeight;
 	}
 
 	@SuppressWarnings("resource")
 	@Unique
-	private int mbbl$drawBarSection(GuiGraphics graphics, int x, int y, BarSection bar, int width, Identifier[] textures, Identifier[] alternativeTextures) {
-		boolean isEmptyText = bar.getName() == null || bar.getName().getString().isEmpty() || bar.getName().getString().isBlank();
-		int scaleClampOffset = isEmptyText ? 0 : 5;
-		int barHeight = (int) MathHelper.clamp(bar.getVerticalScale(), scaleClampOffset + 5, scaleClampOffset + 20);
+	private void mbbl$draw(GuiGraphics graphics,
+	                       int x,
+	                       int y,
+	                       int width,
+						   int height,
+	                       BarSection section,
+	                       Identifier[] textures,
+	                       Identifier[] alternativeTextures) {
 		RenderSystem.enableBlend();
+		Sprite lowerSprite, upperSprite;
 
-		Sprite sprite;
+		lowerSprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(textures[section.getColor().ordinal()]);
+		if (section.getStyle() == BossBar.Style.PROGRESS)
+			upperSprite = null;
+		else
+			upperSprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(alternativeTextures[section.getStyle().ordinal() - 1]);
 
-		Identifier alterIdentifier = safeGet(alternativeTextures, bar.getStyle().ordinal() - 1);
-		Identifier plainIdentifier = safeGet(textures, bar.getColor().ordinal());
-		if (alterIdentifier == null) alterIdentifier = alternativeTextures[0];
-		if (plainIdentifier == null) plainIdentifier = textures[0];
+		((GuiGraphicsAccessor)graphics).multibossbar$invokeDrawSprite(lowerSprite, x, y, 0, width, height);
+		if (upperSprite != null)
+			((GuiGraphicsAccessor)graphics).multibossbar$invokeDrawSprite(upperSprite, x, y, 0, width, height);
 
-		if (bar.getStyle() != BossBar.Style.PROGRESS) sprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(alterIdentifier);
-		else sprite = ((GuiGraphicsAccessor)graphics).multibossbar$getManager().getSprite(plainIdentifier);
-
-		((GuiGraphicsAccessor)graphics).multibossbar$invokeDrawSprite(sprite,
-			x,
-			y,
-			0,
-			width,
-			barHeight);
 		RenderSystem.disableBlend();
-		return barHeight;
 	}
 
 	@Inject(method = "shouldPlayDragonMusic",at=@At("RETURN"),cancellable = true)

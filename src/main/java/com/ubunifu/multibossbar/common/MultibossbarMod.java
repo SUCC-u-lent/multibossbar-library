@@ -1,5 +1,6 @@
 package com.ubunifu.multibossbar.common;
 
+import com.ubunifu.multibossbar.common.command.MultibossBarCommand;
 import com.ubunifu.multibossbar.common.networking.ModNetworking;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.quiltmc.loader.api.ModContainer;
@@ -19,7 +20,7 @@ public class MultibossbarMod implements ModInitializer {
 
 	private static void registerCommands() {
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-//			MultibossBarCommand.register(dispatcher);
+			MultibossBarCommand.register(dispatcher,registryAccess);
 		});
 	}
 }
