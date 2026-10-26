@@ -19,6 +19,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import org.quiltmc.loader.api.QuiltLoader;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -54,6 +55,7 @@ public final class MultibossBarCommand {
     }
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandBuildContext ctx) {
+		if (!QuiltLoader.isDevelopmentEnvironment()) return;
         dispatcher.register(literal("multibossbar")
                 .requires(source -> source.hasPermission(2))
 
