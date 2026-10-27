@@ -76,7 +76,8 @@ public abstract class BossBarHudMixin {
 		if (!containers.isEmpty()) {
 			this.client.getProfiler().push("multiBossHealth");
 			int screenWidth = graphics.getScaledWindowWidth();
-			int barY = 12;
+			boolean isNameVisible = containers.getFirst().getDisplayName() != null && !containers.getFirst().getDisplayName().getString().isBlank();
+			int barY = isNameVisible ? 12 : 3;
 
 			for (int i = 0; i < containers.size(); i++) {
 				MultibarContainer container = containers.get(i);
@@ -84,12 +85,23 @@ public abstract class BossBarHudMixin {
 				MultibarContainer nextContainer = null;
 				if (i + 1 < containers.size()) nextContainer = containers.get(i + 1);
 				Pair<Float, Boolean> pair = renderContainer(graphics, container, nextContainer, barY, screenWidth);
+
+				if (isNameVisible) {
+					Objects.requireNonNull(this.client.textRenderer);
+					int nameWidth = this.client.textRenderer.getWidth(container.getDisplayName());
+					int nameX = screenWidth / 2 - nameWidth / 2;
+					float nameY = barY - FONT_HEIGHT;
+					graphics.drawShadowedText(this.client.textRenderer, container.getDisplayName(), nameX, (int)nameY, 16777215);
+				}
 				barY += Math.round(pair.getFirst());
 				if (pair.getSecond()) break;
 			}
+
 			totalUsedSize = barY;
 
 			this.client.getProfiler().pop();
+		} else {
+			totalUsedSize = 0;
 		}
 	}
 
