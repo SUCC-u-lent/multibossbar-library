@@ -5,10 +5,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.util.Pair;
 import com.ubunifu.multibossbar.common.boss_bar.*;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.hud.boss_bar.*;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.entity.boss.BossBar;
+import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -168,9 +170,10 @@ public abstract class BossBarHudMixin {
 
 	@Unique
 	private float mbbl$renderBar(GuiGraphics graphics, BarSection section, float x, float y, int width) {
+		boolean hasNameField = section.getName() != null && !section.getName().getString().isBlank();
 		float barHeight = MathHelper.clamp(
 			section.getVerticalScale(),
-			section.getName().getString().isBlank() ? 5f : 9f,
+			!hasNameField ? 5f : 9f,
 			20f
 		);
 
@@ -178,6 +181,11 @@ public abstract class BossBarHudMixin {
 		int i = MathHelper.method_53063((float) section.getPercentage(), 0, width);
 		if (i > 0) {
 			mbbl$draw(graphics, Math.round(x), Math.round(y), i, Math.round(barHeight), section, PROGRESS_TEXTURES, NOTCHED_PROGRESS_TEXTURES);
+		}
+
+		if (hasNameField) {
+			Objects.requireNonNull(this.client.textRenderer);
+			drawInBounds(graphics, this.client.textRenderer, section.getName(), Math.round(x), Math.round(y), width, Math.round(barHeight), 16777215, DisplayEntity.TextDisplayEntity.Alignment.CENTER, DisplayEntity.TextDisplayEntity.Alignment.CENTER);
 		}
 
 		return barHeight;
@@ -207,6 +215,46 @@ public abstract class BossBarHudMixin {
 			((GuiGraphicsAccessor)graphics).multibossbar$invokeDrawSprite(upperSprite, x, y, 0, width, height);
 
 		RenderSystem.disableBlend();
+	}
+
+	@Unique
+	private void drawInBounds(GuiGraphics graphics, TextRenderer textRenderer, Text text, int x, int y, int width, int height, int color, DisplayEntity.TextDisplayEntity.Alignment verticalAlignment, DisplayEntity.TextDisplayEntity.Alignment horizontalAlignment) {
+
+		// A font height of approximately 10 units is our reference size.
+		float scale = height / 10.0f;
+
+		if (scale <= 0.0f) return;
+
+		int textWidth = textRenderer.getWidth(text);
+		int textHeight = textRenderer.fontHeight;
+
+		float scaledWidth = textWidth * scale;
+		float scaledHeight = textHeight * scale;
+
+		float drawX = switch (horizontalAlignment) {
+			case LEFT -> x;
+			case CENTER -> x + (width - scaledWidth) / 2.0f;
+			case RIGHT -> x + width - scaledWidth;
+		};
+
+		float drawY = switch (verticalAlignment) {
+			case LEFT -> y;
+			case CENTER -> y + (height - scaledHeight) / 2.0f;
+			case RIGHT -> y + height - scaledHeight;
+		};
+
+		graphics.enableScissor(x, y, x + width, y + height);
+		graphics.getMatrices().push();
+
+		try {
+			graphics.getMatrices().translate(drawX, drawY, 0);
+			graphics.getMatrices().scale(scale, scale, 1.0f);
+
+			graphics.drawShadowedText(textRenderer, text, 0, 0, color);
+		} finally {
+			graphics.getMatrices().pop();
+			graphics.disableScissor();
+		}
 	}
 
 	@Inject(method = "shouldPlayDragonMusic",at=@At("RETURN"),cancellable = true)
