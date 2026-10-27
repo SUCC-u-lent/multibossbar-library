@@ -1,0 +1,39 @@
+{
+	"schemaVersion": 1,
+	"id": "multibossbar",
+	"version": "${version}",
+	"name": "Multi Boss Bar Library",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/multibossbar/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.multibossbar.MultiBossBarLibrary"
+		],
+		"client": [
+			"com.multibossbar.client.MultiBossBarLibraryClient"
+		],
+		"fabric-datagen": []
+	},
+	"mixins": [
+		"multibossbar.mixins.json",
+		{
+			"config": "multibossbar.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

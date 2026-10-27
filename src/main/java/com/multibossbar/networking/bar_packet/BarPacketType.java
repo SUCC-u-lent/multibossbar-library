@@ -1,0 +1,5 @@
+package com.multibossbar.networking.bar_packet;
+
+public enum BarPacketType {
+	UPDATE_NAME, UPDATE_PERCENTAGE, UPDATE_COLOR, UPDATE_STYLE, UPDATE_SCALE, REMOVE_BAR, UPDATE_VISIBILITY, UPDATE_TYPE, CREATE
+}

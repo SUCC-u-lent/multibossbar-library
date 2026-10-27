@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "com.multibossbar.client.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"BossBarHudMixin",
+		"DrawContextAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
