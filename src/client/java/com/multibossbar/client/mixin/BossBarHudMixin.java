@@ -72,7 +72,10 @@ public abstract class BossBarHudMixin {
 	@Inject(method = "render", at = @At("HEAD"))
 	private void render(DrawContext graphics, CallbackInfo ci) {
 		List<MultibarContainer> containers =
-			List.copyOf(MultibarContainer.MULTIBAR_CONTAINERS.values());
+			List.copyOf(MultibarContainer.MULTIBAR_CONTAINERS.values()
+					.stream()
+					.distinct()
+					.toList());
 
 		if (!containers.isEmpty()) {
 			this.client.getProfiler().push("multiBossHealth");
@@ -122,7 +125,10 @@ public abstract class BossBarHudMixin {
 		int nameX = screenWidth / 2 - nameWidth / 2;
 		float nameY = barY - (FONT_HEIGHT * headerTextMultiplier);
 
-		List<BarSection> barSections = List.copyOf(container.getBars());
+		List<BarSection> barSections = List.copyOf(container.getBars()
+				.stream()
+				.distinct()
+				.toList());
 		for (int i = 0; i < barSections.size(); i++) {
 			BarSection section = barSections.get(i);
 			if (!section.isVisible()) continue;

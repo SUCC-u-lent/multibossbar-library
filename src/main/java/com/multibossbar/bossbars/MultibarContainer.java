@@ -191,4 +191,14 @@ public class MultibarContainer {
 	public List<BarSection> getBars() {
 		return this.barSectionList;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof MultibarContainer c && this.getUuid().equals(c.getUuid());
+	}
+
+	@Override
+	public String toString() {
+		return String.format("[%s-%s]",this.getUuid().toString(),this.getDisplayName().getString());
+	}
 }

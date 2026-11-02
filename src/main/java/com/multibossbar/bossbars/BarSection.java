@@ -98,4 +98,14 @@ public class BarSection {
 	public void setType(RowType type) {
 		this.type = type;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof BarSection section && this.getUuid().equals(section.getUuid());
+	}
+
+	@Override
+	public String toString() {
+		return String.format("[%s-%s]",this.getUuid().toString(),this.getName().getString());
+	}
 }
