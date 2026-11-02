@@ -1,6 +1,7 @@
 package com.multibossbar.bossbars;
 
 import com.multibossbar.bossbars.server.ServerBarSection;
+import net.fabricmc.api.*;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.*;
@@ -10,11 +11,25 @@ import java.util.*;
 public class MultibarContainer {
 	public static final HashMap<UUID,MultibarContainer> MULTIBAR_CONTAINERS = new HashMap<>();
 
+	@Environment(EnvType.CLIENT)
 	@Deprecated
 	public static @NotNull MultibarContainer getClientBar(UUID barUUID) {
 		return Objects.requireNonNull(MULTIBAR_CONTAINERS.get(barUUID));
 	}
+
+	@Environment(EnvType.CLIENT)
 	public static Optional<MultibarContainer> getOptionalClientBar(UUID barUUID) {
+		return Optional.ofNullable(MULTIBAR_CONTAINERS.get(barUUID));
+	}
+
+	@Environment(EnvType.SERVER)
+	@Deprecated
+	public static @NotNull MultibarContainer getBar(UUID barUUID) {
+		return Objects.requireNonNull(MULTIBAR_CONTAINERS.get(barUUID));
+	}
+
+	@Environment(EnvType.SERVER)
+	public static Optional<MultibarContainer> getOptionalBar(UUID barUUID) {
 		return Optional.ofNullable(MULTIBAR_CONTAINERS.get(barUUID));
 	}
 
@@ -75,7 +90,7 @@ public class MultibarContainer {
 
 	public MultibarContainer() { this(UUID.randomUUID()); }
 
-	public MultibarContainer(UUID uuid) { this.uuid = uuid; this.displayName = Text.empty(); }
+	public MultibarContainer(UUID uuid) { this.uuid = uuid; this.displayName = Text.empty(); onCreated(); }
 
 	public MultibarContainer(UUID uuid, boolean darkenSky, boolean dragonMusic, boolean thickenFog) {
 		this(uuid);
@@ -91,6 +106,10 @@ public class MultibarContainer {
 		this(uuid,darkenSky,dragonMusic,thickenFog,visible);
 		this.displayName = text;
 	}
+	public void onCreated() {
+		MULTIBAR_CONTAINERS.put(this.getUuid(), this);
+	}
+
 	public boolean isThickenFog() {
 		return thickenFog;
 	}
@@ -125,6 +144,12 @@ public class MultibarContainer {
 
 	public boolean removeSection(BarSection section) {
 		return this.barSectionList.removeIf( s-> s.equals(section) || s.getUuid().equals(section.getUuid()) );
+	}
+
+	public boolean replace(BarSection section) {
+		if (this.barSectionList.stream().noneMatch(s->s.getUuid().equals(section.getUuid()))) return false;
+		this.barSectionList.removeIf(s->s.getUuid().equals(section.getUuid()));
+		return this.barSectionList.add(section);
 	}
 
 	public boolean clearSections() {

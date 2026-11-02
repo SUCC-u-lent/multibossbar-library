@@ -58,6 +58,20 @@ public class ClientBossBarS2CPacket {
                 Objects.requireNonNull(section);
                 section.setType(buf.readEnumConstant(RowType.class));
             }
+            case REPLACE -> {
+                container.removeSection(section);
+                section = MultibarContainer.createSection(
+                        container,
+                        sectionUUID,
+                        BossBarS2CPacket.TEXT_UNLIMITED_CODEC.decode(buf),
+                        buf.readDouble(),
+                        buf.readEnumConstant(BossBar.Color.class),
+                        buf.readEnumConstant(BossBar.Style.class),
+                        buf.readEnumConstant(RowType.class),
+                        buf.readFloat(),
+                        buf.readBoolean()
+                );
+            }
             case CREATE -> section = MultibarContainer.createSection(
                     container,
                     sectionUUID,
@@ -70,5 +84,7 @@ public class ClientBossBarS2CPacket {
                     buf.readBoolean()
             );
         }
+        if (section != null)
+            container.replace(section);
     }
 }

@@ -51,7 +51,7 @@ public record BossBarS2CPacket(@NotNull PacketByteBuf data) implements CustomPay
 			case REMOVE_BAR -> {} // Got all shit.
 			case UPDATE_VISIBILITY -> buf.writeBoolean(section.isVisible());
 			case UPDATE_TYPE -> buf.writeEnumConstant(section.getType());
-			case CREATE -> {
+			case CREATE, REPLACE -> {
 				TEXT_UNLIMITED_CODEC.encode(buf,section.getName());
 				buf.writeDouble(section.getPercentage());
 				buf.writeEnumConstant(section.getColor());

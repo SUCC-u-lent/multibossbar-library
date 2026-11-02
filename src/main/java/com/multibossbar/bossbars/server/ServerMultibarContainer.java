@@ -93,6 +93,12 @@ public class ServerMultibarContainer extends MultibarContainer {
 	}
 
 	@Override
+	public boolean replace(BarSection section) {
+		BossBarS2CPacket.sendPacket(BarPacketType.REPLACE, this, section, this.PLAYERS);
+		return super.replace(section);
+	}
+
+	@Override
 	public boolean clearSections() {
 		BossBarContainerS2CPacket.sendPacket(ServerBarPacketType.CLEAR_BARS, this, this.PLAYERS);
 		return super.clearSections();
